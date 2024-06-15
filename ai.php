@@ -1,43 +1,54 @@
 <?php
-// Define the URL of the AI server
-$aiServerUrl = 'https://ydegrees.pearlbuddy.com:2024?string=test';
-// echo  $aiServerUrl ;
-// Initialize cURL session
-$curl = curl_init();
 
-// Set cURL options
-curl_setopt_array($curl, [
-    CURLOPT_URL => $aiServerUrl,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_HTTPGET => true, // Use GET method
-    CURLOPT_SSL_VERIFYPEER => false, // Disable SSL verification (not recommended for production)
-    CURLOPT_TIMEOUT => 30, // Timeout after 30 seconds
-]);
+function sendMessage($inputString, $providedApiKey) {
+    $expectedApiKey = '1999'; // Hardcoded API key
+    $serverIP = 'ydegrees.pearlbuddy.com';
+    $serverPort = '2024'; // Update this to the correct port if needed
+    $providedApiKey = '1999'; // API key provided by the client
+    $inputString = 'hello'; // Static input string
+    
+    // Validate API key
+    if ($providedApiKey !== $expectedApiKey) {
+        return ['error' => 'Invalid API key'];
+    }
 
-// Execute cURL request
-$response = curl_exec($curl);
+    // Construct the URL
+    $url = "https://$serverIP:$serverPort/append?string=" . urlencode($inputString);
 
-// Check for errors
-if (curl_errno($curl)) {
-    $errorMessage = curl_error($curl);
-    $errorCode = curl_errno($curl);
-    curl_close($curl);
-    echo "cURL error ({$errorCode}): {$errorMessage}\n";
-    exit;
+    // Set SSL context options
+    $options = [
+        "ssl" => [
+            "verify_peer" => false,
+            "verify_peer_name" => false,
+        ],
+    ];
+
+    // Create context resource for the request
+    $context = stream_context_create([
+        "http" => [
+            "method" => "GET",
+            "header" => "Accept: application/json\r\n",
+        ] + $options,
+    ]);
+
+    // Perform the HTTP GET request
+    $response = file_get_contents($url, false, $context);
+
+    // Check for errors
+    if ($response === false) {
+        $error = error_get_last();
+        return ['error' => 'Error communicating with server: ' . $error['message']];
+    }
+
+    return ['response' => $response];
 }
 
-// Get HTTP status code
-$httpStatusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+// Usage example with static input
 
-// Close cURL session
-curl_close($curl);
+$result = sendMessage($inputString, $providedApiKey);
 
-if ($httpStatusCode !== 200) {
-    echo "HTTP error: Received status code {$httpStatusCode}\n";
-    exit;
+if (isset($result['error'])) {
+    echo json_encode(['error' => $result['error']]);
+} else {
+    echo json_encode(['response' => $result['response']]);
 }
-
-// Output the response from the AI server
-echo "Response from AI server: \n";
-echo $response;
