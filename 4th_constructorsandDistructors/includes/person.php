@@ -27,7 +27,12 @@ class Person {
 
     public function getAge() {
         return $this->age;
+<<<<<<< HEAD
         // return $this->age;
 
+=======
+
+        // this is  the sub branch
+>>>>>>> sub-oop-php
     }
 }
